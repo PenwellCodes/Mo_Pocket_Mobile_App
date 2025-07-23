@@ -127,6 +127,7 @@ export const AuthProvider = ({ children }) => {
         setAuth({
           authenticate: true,
           user: data.data.user,
+        });
         // Clear the signup form
         setSignUpFormData({
           userName: "",
@@ -143,8 +144,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }
-    } finally {
-      setLoading(false);
 
   // Logout
   async function resetCredentials() {

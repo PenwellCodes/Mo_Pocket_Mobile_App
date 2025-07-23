@@ -139,31 +139,6 @@ const TabLayout = () => {
             }}
           />
         )}
-      </Tabs>
-      <StatusBar backgroundColor={colors.background} style="standard" />
-    </>
-  );
-};
-
-export default TabLayout;
-
-        <Tabs.Screen
-          name="settings"
-          options={{
-            title: "Settings",
-            headerShown: false,
-            tabBarIcon: ({ color }) => (
-              <TabIcon
-                icon={() => (
-                  <Ionicons name="settings-outline" size={24} color={color} />
-                )}
-                color={color}
-                label="Settings"
-                isActive={pathname === "/settings"}
-              />
-            ),
-          }}
-        />
         <Tabs.Screen
           name="location"
           options={{
