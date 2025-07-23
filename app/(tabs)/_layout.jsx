@@ -55,67 +55,10 @@ const TabLayout = () => {
             ),
           }}
         />
-        <Tabs.Screen
-          name="chat"
-          options={{
-            title: "Chat",
-            headerShown: false,
-            tabBarIcon: ({ color }) => (
-              <TabIcon
-                icon={() => (
-                  <Ionicons
-                    name="chatbubble-ellipses-outline"
-                    size={24}
-                    color={color}
-                  />
-                )}
-                color={color}
-                label="Chat"
-                isActive={pathname === "/chat"}
-              />
-            ),
-          }}
-          listeners={{
-            tabPress: (e) => {
-              if (!currentUser) {
-                e.preventDefault(); // Prevent navigation to Chat
-                router.replace("/sign-in"); // Redirect to sign-in
-              }
-            },
-          }}
-        />
-        <Tabs.Screen
-          name="settings"
-          options={{
-            title: "Settings",
-            headerShown: false,
-            tabBarIcon: ({ color }) => (
-              <TabIcon
-                icon={() => (
-                  <Ionicons name="settings-outline" size={24} color={color} />
-                )}
-                color={color}
-                label="Settings"
-                isActive={pathname === "/settings"}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="location"
-          options={{
-            title: "Location",
-            headerShown: false,
-            tabBarIcon: ({ color }) => (
-              <TabIcon
-                icon={() => <Feather name="map-pin" size={24} color={color} />}
-                color={color}
-                label="Locations"
-                isActive={pathname === "/location"}
-              />
-            ),
-          }}
-        />
+       
+       
+     
+  
       </Tabs>
       <StatusBar backgroundColor={colors.background} style="standard" />
     </>

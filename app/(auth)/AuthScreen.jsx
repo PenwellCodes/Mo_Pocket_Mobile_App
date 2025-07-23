@@ -1,8 +1,10 @@
 import React, { useState, useContext } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import CommonForm from "../../components/CommonForm"; // your RN form from earlier
-import { signInFormControls, signUpFormControls } from "../../api/config";
-import { AuthContext } from "../../context/appstate/AuthContext"; // Adjust path as needed
+import { signInFormControls, signUpFormControls } from "../../constants/index";
+ // Adjust path as needed
+
+import { useAuth } from "../../context/appstate/AuthContext";
 
 export default function AuthScreen() {
   const [activeTab, setActiveTab] = useState("signin");
@@ -15,7 +17,7 @@ export default function AuthScreen() {
     handleRegisterUser,
     handleLoginUser,
     loading,
-  } = useContext(AuthContext);
+  } = useAuth();
 
   function checkIfSignInFormIsValid() {
     return signInFormData.userEmail !== "" && signInFormData.password !== "";

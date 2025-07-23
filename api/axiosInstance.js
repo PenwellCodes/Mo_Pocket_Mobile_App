@@ -1,7 +1,7 @@
 // api/axiosInstance.js
 import axios from 'axios';
 import { getToken } from '../utils/secureStore'; // adjust path if needed
-import { API_URL } from './config';
+import { API_URL } from '../api/config';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
