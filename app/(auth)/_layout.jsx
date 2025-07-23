@@ -31,23 +31,13 @@ const AuthLayout = () => {
             }}
           />
           <Stack.Screen
-            name="sign-in"
+            name="AuthScreen"
             options={{
               headerShown: false,
             }}
           />
-          <Stack.Screen
-            name="sign-up"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="reset-password"
-            options={{
-              headerShown: false,
-            }}
-          />
+          
+         
         </Stack>
         <StatusBar style="auto" />
       </>

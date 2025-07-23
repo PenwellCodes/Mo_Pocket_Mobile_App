@@ -14,10 +14,10 @@ import {
   Dimensions,
   RefreshControl
 } from "react-native";
-import axiosInstance from "../api/axiosInstance";
+import axiosInstance from "../../api/axiosInstance";
 import Icon from "react-native-vector-icons/FontAwesome";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import StudentViewCommonHeader from "../components/user-view/header";
+
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
@@ -185,7 +185,7 @@ const AdminDashboard = () => {
 
   return (
     <View style={styles.container}>
-      <StudentViewCommonHeader />
+     
       <View style={styles.mainContainer}>
         {/* Sidebar for larger screens */}
         {Dimensions.get('window').width > 768 && (

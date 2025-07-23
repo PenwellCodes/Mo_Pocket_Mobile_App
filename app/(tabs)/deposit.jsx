@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Alert
 } from "react-native";
-import axiosInstance from "@/api/axiosInstance";
+import axiosInstance from "../../api/axiosInstance";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 
 export default function DepositPage() {

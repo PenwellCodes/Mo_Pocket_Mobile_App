@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
-import axiosInstance from "@/api/axiosInstance";
+import axiosInstance from "../../api/axiosInstance"; // Adjust the path as needed
 
 export default function WithdrawPage() {
   const [loading, setLoading] = useState(false);

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import axiosInstance from '@/api/axiosInstance';
+import axiosInstance from '../../api/axiosInstance'; // Adjust the path as needed
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
 
