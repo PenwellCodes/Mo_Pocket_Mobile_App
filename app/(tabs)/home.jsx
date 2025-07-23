@@ -1,10 +1,11 @@
-// app/home/index.js (or screens/HomePage.js if you're using React Navigation)
+// app/home/index.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import axiosInstance from '../../api/axiosInstance'; // Adjust the path as needed
-import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
+import axiosInstance from '../../api/axiosInstance'; // Adjust the path
+import { FontAwesome } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
+import * as SecureStore from 'expo-secure-store';
 
 export default function HomePage() {
   const [user, setUser] = useState(null);
@@ -12,15 +13,13 @@ export default function HomePage() {
   const [withdrawableDeposits, setWithdrawableDeposits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('dashboard');
   const router = useRouter();
   const { colors } = useTheme();
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        setLoading(true);
-        const id = await SecureStore.getItemAsync("userId"); // Replace localStorage
+        const id = await SecureStore.getItemAsync("userId");
         if (!id) {
           setError("No user ID found. Please log in again.");
           router.push("/auth");
@@ -29,22 +28,29 @@ export default function HomePage() {
 
         const [userRes, vaultRes, withdrawableRes] = await Promise.all([
           axiosInstance.get(`/api/user/${id}`),
-          axiosInstance.get("/api/vault-info").catch(() => ({ data: { success: false, data: null } })),
-          axiosInstance.get("/api/withdrawable-deposits").catch(() => ({ data: { success: false, data: [] } }))
+          axiosInstance.get("/api/vault-info").catch((err) => {
+            console.error("Vault info error:", err.response?.data || err.message);
+            return { data: null };
+          }),
+          axiosInstance.get("/api/withdrawable-deposits").catch((err) => {
+            console.error("Withdrawable error:", err.response?.data || err.message);
+            return { data: [] };
+          }),
         ]);
 
-        if (userRes.data.success) setUser(userRes.data.data);
-        if (vaultRes.data.success) setVaultInfo(vaultRes.data.data);
-        if (withdrawableRes.data.success) setWithdrawableDeposits(withdrawableRes.data.data);
+        if (userRes?.data?.data) setUser(userRes.data.data);
+        if (vaultRes?.data) setVaultInfo(vaultRes.data);
+        if (withdrawableRes?.data) setWithdrawableDeposits(withdrawableRes.data);
 
       } catch (err) {
-        setError("Failed to fetch user data. Please try again.");
+        setError("Failed to load data.");
+        console.error("Data loading error:", err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
+    fetchUserData(); // ✅ Call the function inside useEffect
   }, []);
 
   const goToDeposit = async () => {
@@ -52,9 +58,9 @@ export default function HomePage() {
       const res = await axiosInstance.post("/momo/token");
       if (res.data.data?.access_token) {
         await SecureStore.setItemAsync("momoToken", res.data.data.access_token);
+        router.push("/deposit");
       }
-      router.push("/deposit");
-    } catch {
+    } catch (err) {
       setError("Failed to generate payment token.");
     }
   };
@@ -104,11 +110,13 @@ export default function HomePage() {
       {/* Summary Stats */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Total Deposited</Text>
-        <Text style={[styles.amount, { color: colors.primary }]}>{formatCurrency(vaultInfo?.vault?.balance)}</Text>
-        <Text style={styles.note}>{vaultInfo?.recentTransactions?.length || 0} transactions</Text>
+        <Text style={[styles.amount, { color: colors.primary }]}>
+          {formatCurrency(vaultInfo?.vault?.balance)}
+        </Text>
+        <Text style={styles.note}>
+          {vaultInfo?.recentTransactions?.length || 0} transactions
+        </Text>
       </View>
-
-      {/* Add more cards and sections below (like Deposits, Transactions, etc.) */}
     </ScrollView>
   );
 }
@@ -205,5 +213,5 @@ const styles = StyleSheet.create({
   note: {
     fontSize: 12,
     color: '#999',
-  }
+  },
 });

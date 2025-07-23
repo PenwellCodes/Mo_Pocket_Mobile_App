@@ -55,6 +55,53 @@ const TabLayout = () => {
             ),
           }}
         />
+           <Tabs.Screen
+          name="deposit"
+          options={{
+            title: "Deposit",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <TabIcon
+                icon={() => <AntDesign name="home" size={24} color={color} />}
+                color={color}
+                label="Deposit"
+                isActive={pathname === "/deposit"}
+              />
+            ),
+          }}
+        />
+           <Tabs.Screen
+          name="vaults"
+          options={{
+            title: "Vaults",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <TabIcon
+                icon={() => <AntDesign name="home" size={24} color={color} />}
+                color={color}
+                label="Vaults"
+                isActive={pathname === "/vaults"}
+              />
+            ),
+          }}
+        />
+
+          
+           <Tabs.Screen
+          name="withdraw"
+          options={{
+            title: "Withdraw",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <TabIcon
+                icon={() => <AntDesign name="home" size={24} color={color} />}
+                color={color}
+                label="Withdraw"
+                isActive={pathname === "/withdraw"}
+              />
+            ),
+          }}
+        />
        
        
      
