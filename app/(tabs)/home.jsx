@@ -1,12 +1,14 @@
-// app/home/index.js (or screens/HomePage.js if you're using React Navigation)
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import axiosInstance from '../../api/axiosInstance'; // Adjust the path as needed
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
+import * as SecureStore from 'expo-secure-store';
+import { useAuth } from '../../context/appstate/AuthContext';
 
 export default function HomePage() {
+  const { auth } = useAuth();
   const [user, setUser] = useState(null);
   const [vaultInfo, setVaultInfo] = useState(null);
   const [withdrawableDeposits, setWithdrawableDeposits] = useState([]);
@@ -23,7 +25,7 @@ export default function HomePage() {
         const id = await SecureStore.getItemAsync("userId"); // Replace localStorage
         if (!id) {
           setError("No user ID found. Please log in again.");
-          router.push("/auth");
+          router.push("/(auth)/AuthScreen");
           return;
         }
 
@@ -53,13 +55,13 @@ export default function HomePage() {
       if (res.data.data?.access_token) {
         await SecureStore.setItemAsync("momoToken", res.data.data.access_token);
       }
-      router.push("/deposit");
+      router.push("/(tabs)/deposit");
     } catch {
       setError("Failed to generate payment token.");
     }
   };
 
-  const goToWithdraw = () => router.push("/withdraw");
+  const goToWithdraw = () => router.push("/(tabs)/withdraw");
 
   const formatCurrency = (amount) => `E${(amount || 0).toFixed(2)}`;
 
@@ -76,9 +78,9 @@ export default function HomePage() {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Welcome, {user?.userName || 'User'}!</Text>
+        <Text style={styles.title}>Welcome, {auth.user?.userName || user?.userName || 'User'}!</Text>
         <Text style={styles.subtitle}>Manage your vault and track your savings</Text>
-        <Text style={styles.phone}>Phone: {user?.phoneNumber}</Text>
+        <Text style={styles.phone}>Phone: {auth.user?.phoneNumber || user?.phoneNumber}</Text>
       </View>
 
       {/* Actions */}
@@ -108,6 +110,21 @@ export default function HomePage() {
         <Text style={styles.note}>{vaultInfo?.recentTransactions?.length || 0} transactions</Text>
       </View>
 
+      {/* Quick Stats */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <FontAwesome name="piggy-bank" size={24} color={colors.primary} />
+          <Text style={styles.statTitle}>Active Vaults</Text>
+          <Text style={styles.statValue}>{vaultInfo?.lockedDeposits?.length || 0}</Text>
+        </View>
+        
+        <View style={styles.statCard}>
+          <FontAwesome name="clock-o" size={24} color="#FFA500" />
+          <Text style={styles.statTitle}>Withdrawable</Text>
+          <Text style={styles.statValue}>{withdrawableDeposits.length || 0}</Text>
+        </View>
+      </View>
+
       {/* Add more cards and sections below (like Deposits, Transactions, etc.) */}
     </ScrollView>
   );
@@ -130,6 +147,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 20,
+    paddingTop: 40,
   },
   title: {
     fontSize: 22,
@@ -141,6 +159,34 @@ const styles = StyleSheet.create({
   phone: {
     fontSize: 12,
     color: '#999',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  statTitle: {
+    fontSize: 12,
+    color: '#777',
+    marginTop: 8,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 4,
   },
   actions: {
     flexDirection: 'row',

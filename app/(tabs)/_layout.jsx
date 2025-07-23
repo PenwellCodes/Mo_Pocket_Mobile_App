@@ -23,7 +23,7 @@ const TabIcon = ({ icon, color, label, isActive }) => (
 const TabLayout = () => {
   const { colors, dark } = useTheme();
   const pathname = usePathname(); // Get current active route
-  const { currentUser } = useAuth(); // Get user state from AuthContext
+  const { auth } = useAuth(); // Get user state from AuthContext
   const router = useRouter();
 
   return (
@@ -56,34 +56,97 @@ const TabLayout = () => {
           }}
         />
         <Tabs.Screen
-          name="chat"
+          name="deposit"
           options={{
-            title: "Chat",
+            title: "Deposit",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <TabIcon
+                icon={() => <AntDesign name="plus" size={24} color={color} />}
+                color={color}
+                label="Deposit"
+                isActive={pathname === "/deposit"}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="withdraw"
+          options={{
+            title: "Withdraw",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <TabIcon
+                icon={() => <AntDesign name="minus" size={24} color={color} />}
+                color={color}
+                label="Withdraw"
+                isActive={pathname === "/withdraw"}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="vaults"
+          options={{
+            title: "Vaults",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <TabIcon
+                icon={() => <AntDesign name="bank" size={24} color={color} />}
+                color={color}
+                label="Vaults"
+                isActive={pathname === "/vaults"}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: "Settings",
             headerShown: false,
             tabBarIcon: ({ color }) => (
               <TabIcon
                 icon={() => (
                   <Ionicons
-                    name="chatbubble-ellipses-outline"
+                    name="settings-outline"
                     size={24}
                     color={color}
                   />
                 )}
                 color={color}
-                label="Chat"
-                isActive={pathname === "/chat"}
+                label="Settings"
+                isActive={pathname === "/settings"}
               />
             ),
           }}
-          listeners={{
-            tabPress: (e) => {
-              if (!currentUser) {
-                e.preventDefault(); // Prevent navigation to Chat
-                router.replace("/sign-in"); // Redirect to sign-in
-              }
-            },
-          }}
         />
+        {/* Admin tab - only show if user is admin */}
+        {auth.user?.role === 'admin' && (
+          <Tabs.Screen
+            name="admin"
+            options={{
+              title: "Admin",
+              headerShown: false,
+              tabBarIcon: ({ color }) => (
+                <TabIcon
+                  icon={() => <Ionicons name="shield" size={24} color={color} />}
+                  color={color}
+                  label="Admin"
+                  isActive={pathname === "/admin"}
+                />
+              ),
+            }}
+          />
+        )}
+      </Tabs>
+      <StatusBar backgroundColor={colors.background} style="standard" />
+    </>
+  );
+};
+
+export default TabLayout;
+
         <Tabs.Screen
           name="settings"
           options={{

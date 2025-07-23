@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import axiosInstance from "../../api/axiosInstance";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
+import * as SecureStore from "expo-secure-store";
 
 export default function DepositPage() {
   const [formData, setFormData] = useState({
@@ -140,7 +141,7 @@ export default function DepositPage() {
       setMessage(null);
 
       const depositData = {
-        userId: await AsyncStorage.getItem("userId"),  // or however you store userId in RN
+        userId: await SecureStore.getItemAsync("userId"),
         amount: parseFloat(formData.amount),
         lockPeriodInDays: parseInt(formData.lockDays),
         phoneNumber: formData.phoneNumber.trim(),

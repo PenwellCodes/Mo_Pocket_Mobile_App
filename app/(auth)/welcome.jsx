@@ -19,7 +19,7 @@ const Onboarding = () => {
 
   useEffect(() => {
     if (isFirstLaunch === false) {
-      router.replace("/(tabs)/home");
+      router.replace("/(auth)/AuthScreen");
     }
   }, [isFirstLaunch]);
 
@@ -29,7 +29,7 @@ const Onboarding = () => {
 
   const handleComplete = async () => {
     await completeOnboarding();
-    router.replace("/(tabs)/home");
+    router.replace("/(auth)/AuthScreen");
   };
 
   return (

@@ -4,9 +4,9 @@ import { useAuth } from "../../context/appstate/AuthContext";
 import { View, ActivityIndicator } from "react-native";
 
 const AuthLayout = () => {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { loading, auth } = useAuth();
 
-  if (isLoading) {
+  if (loading) {
     // Show loading spinner while checking auth
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -16,9 +16,9 @@ const AuthLayout = () => {
     );
   }
 
-  if (isAuthenticated) {
+  if (auth.authenticate) {
     // If authenticated, redirect to home (or main app)
-    return <Redirect href="/home" />;
+    return <Redirect href="/(tabs)/home" />;
   } else {
     // If NOT authenticated, show auth stack (login/signup/etc)
     return (
@@ -36,8 +36,6 @@ const AuthLayout = () => {
               headerShown: false,
             }}
           />
-          
-         
         </Stack>
         <StatusBar style="auto" />
       </>

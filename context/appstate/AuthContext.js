@@ -62,6 +62,7 @@ export const AuthProvider = ({ children }) => {
   // Login User
   async function handleLoginUser() {
     try {
+      setLoading(true);
       const response = await axiosInstance.post("/auth/login", signInFormData);
       const data = response.data;
 
@@ -80,9 +81,9 @@ export const AuthProvider = ({ children }) => {
         });
 
         if (data.data.user.role === "admin") {
-          router.push("/admin");
+          router.push("/(tabs)/admin");
         } else {
-          router.push("/home");
+          router.push("/(tabs)/home");
         }
       } else {
         setAuth({ authenticate: false, user: null });
@@ -100,12 +101,15 @@ export const AuthProvider = ({ children }) => {
         type: "error",
         text1: error.response?.data?.message || "Login failed. Please try again.",
       });
+    } finally {
+      setLoading(false);
     }
   }
 
   // Check Auth on app load
   async function checkAuthUser() {
     try {
+      setLoading(true);
       const token = await SecureStore.getItemAsync("accessToken");
       if (!token) {
         setAuth({ authenticate: false, user: null });
@@ -123,6 +127,12 @@ export const AuthProvider = ({ children }) => {
         setAuth({
           authenticate: true,
           user: data.data.user,
+        // Clear the signup form
+        setSignUpFormData({
+          userName: "",
+          userEmail: "",
+          phoneNumber: "",
+          password: "",
         });
       } else {
         setAuth({ authenticate: false, user: null });
@@ -133,13 +143,15 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }
+    } finally {
+      setLoading(false);
 
   // Logout
   async function resetCredentials() {
     setAuth({ authenticate: false, user: null });
     await SecureStore.deleteItemAsync("accessToken");
     await SecureStore.deleteItemAsync("userId");
-    router.push("/sign-in");
+    router.push("/(auth)/AuthScreen");
   }
 
   useEffect(() => {
@@ -158,6 +170,8 @@ export const AuthProvider = ({ children }) => {
         auth,
         resetCredentials,
         loading,
+        isAuthenticated: auth.authenticate,
+        currentUser: auth.user,
       }}
     >
       {children}
