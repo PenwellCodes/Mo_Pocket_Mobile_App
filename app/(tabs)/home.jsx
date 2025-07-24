@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import axiosInstance from '../../api/axiosInstance'; // Adjust the path
+import axiosInstance from '../../api/axiosInstance';
 import { FontAwesome } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
 import * as SecureStore from 'expo-secure-store';
@@ -30,27 +30,26 @@ export default function HomePage() {
           axiosInstance.get(`/api/user/${id}`),
           axiosInstance.get("/api/vault-info").catch((err) => {
             console.error("Vault info error:", err.response?.data || err.message);
-            return { data: null };
+            return { data: { success: false, data: null } };
           }),
           axiosInstance.get("/api/withdrawable-deposits").catch((err) => {
             console.error("Withdrawable error:", err.response?.data || err.message);
-            return { data: [] };
+            return { data: { success: false, data: [] } };
           }),
         ]);
 
-        if (userRes?.data?.data) setUser(userRes.data.data);
-        if (vaultRes?.data) setVaultInfo(vaultRes.data);
-        if (withdrawableRes?.data) setWithdrawableDeposits(withdrawableRes.data);
-
+        setUser(userRes?.data?.data); // ✅ fixed: userRes.data.data
+        setVaultInfo(vaultRes?.data?.data); // ✅ fixed: vaultRes.data.data
+        setWithdrawableDeposits(withdrawableRes?.data?.data || []);
       } catch (err) {
-        setError("Failed to load data.");
-        console.error("Data loading error:", err.message);
+        console.error(err);
+        setError("Failed to load your data. Please try again.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData(); // ✅ Call the function inside useEffect
+    fetchUserData();
   }, []);
 
   const goToDeposit = async () => {
@@ -58,9 +57,9 @@ export default function HomePage() {
       const res = await axiosInstance.post("/momo/token");
       if (res.data.data?.access_token) {
         await SecureStore.setItemAsync("momoToken", res.data.data.access_token);
-        router.push("/deposit");
       }
-    } catch (err) {
+      router.push("/deposit");
+    } catch {
       setError("Failed to generate payment token.");
     }
   };
@@ -80,14 +79,12 @@ export default function HomePage() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Welcome, {user?.userName || 'User'}!</Text>
         <Text style={styles.subtitle}>Manage your vault and track your savings</Text>
         <Text style={styles.phone}>Phone: {user?.phoneNumber}</Text>
       </View>
 
-      {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity onPress={goToDeposit} style={styles.depositButton}>
           <FontAwesome name="arrow-up" size={18} color="white" />
@@ -99,7 +96,6 @@ export default function HomePage() {
         </TouchableOpacity>
       </View>
 
-      {/* Error */}
       {!!error && (
         <View style={styles.errorBox}>
           <FontAwesome name="exclamation-circle" size={16} color="red" />
@@ -107,7 +103,6 @@ export default function HomePage() {
         </View>
       )}
 
-      {/* Summary Stats */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Total Deposited</Text>
         <Text style={[styles.amount, { color: colors.primary }]}>
