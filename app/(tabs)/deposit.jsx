@@ -1,584 +1,687 @@
-import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
-  ActivityIndicator, 
+"use client"
+
+import { useState, useEffect } from "react"
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
   StyleSheet,
-  Alert
-} from "react-native";
-import axiosInstance from "../../api/axiosInstance";
-import FontAwesome from "react-native-vector-icons/FontAwesome";
-import { getToken } from '../../utils/secureStore';
+  Dimensions,
+  StatusBar,
+} from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
+import { Ionicons } from "@expo/vector-icons"
+import axiosInstance from "../../api/axiosInstance"
+import { getToken } from "../../utils/secureStore"
+
+const { width } = Dimensions.get("window")
 
 export default function DepositPage() {
   const [formData, setFormData] = useState({
     amount: "",
     lockDays: "",
-    phoneNumber: ""
-  });
-  const [message, setMessage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [tokenLoading, setTokenLoading] = useState(true);
-  const [momoToken, setMomoToken] = useState(null);
-  const [vaultInfo, setVaultInfo] = useState(null);
+    phoneNumber: "",
+  })
+  const [message, setMessage] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [tokenLoading, setTokenLoading] = useState(true)
+  const [momoToken, setMomoToken] = useState(null)
+  const [vaultInfo, setVaultInfo] = useState(null)
 
-  // Lock period options
   const lockPeriodOptions = [
-    { days: 1, label: "1 Day", penalty: "10% if withdrawn early", color: "#FEF3C7" }, // yellow
-    { days: 2, label: "2 Days", penalty: "10% if withdrawn early", color: "#FEE2E2" }, // red-ish
-    { days: 3, label: "3 Days", penalty: "10% if withdrawn early", color: "#FECACA" },
-    { days: 7, label: "1 Week", penalty: "No penalty", color: "#D1FAE5" }, // green
-    { days: 30, label: "1 Month", penalty: "No penalty", color: "#DBEAFE" }, // blue
-  ];
+    { days: 1, label: "1 Day", penalty: "10% penalty", color: ["#FEF3C7", "#FDE68A"], icon: "flash" },
+    { days: 2, label: "2 Days", penalty: "10% penalty", color: ["#FEE2E2", "#FECACA"], icon: "time" },
+    { days: 3, label: "3 Days", penalty: "10% penalty", color: ["#FECACA", "#FCA5A5"], icon: "calendar" },
+    { days: 7, label: "1 Week", penalty: "No penalty", color: ["#D1FAE5", "#A7F3D0"], icon: "checkmark-circle" },
+    { days: 30, label: "1 Month", penalty: "No penalty", color: ["#DBEAFE", "#BFDBFE"], icon: "trophy" },
+  ]
 
   useEffect(() => {
     const initializePage = async () => {
-      await Promise.all([
-        fetchMomoToken(),
-        fetchVaultInfo()
-      ]);
-    };
-    initializePage();
-  }, []);
+      await Promise.all([fetchMomoToken(), fetchVaultInfo()])
+    }
+    initializePage()
+  }, [])
 
   const fetchMomoToken = async () => {
     try {
-      setTokenLoading(true);
-      const res = await axiosInstance.post("/momo/token");
-      const token = res.data?.data?.access_token;
+      setTokenLoading(true)
+      const res = await axiosInstance.post("/momo/token")
+      const token = res.data?.data?.access_token
       if (token) {
-        setMomoToken(token);
-        console.log("MoMo token fetched successfully");
+        setMomoToken(token)
+        console.log("MoMo token fetched successfully")
       } else {
         setMessage({
           type: "error",
-          text: "Failed to initialize payment system. Please refresh the page."
-        });
+          text: "Failed to initialize payment system. Please refresh the page.",
+        })
       }
     } catch (error) {
-      console.error("MoMo token fetch failed:", error);
+      console.error("MoMo token fetch failed:", error)
       setMessage({
         type: "error",
-        text: "Failed to connect to payment system. Please check your connection."
-      });
+        text: "Failed to connect to payment system. Please check your connection.",
+      })
     } finally {
-      setTokenLoading(false);
+      setTokenLoading(false)
     }
-  };
+  }
 
   const fetchVaultInfo = async () => {
     try {
-      const response = await axiosInstance.get("/api/vault-info");
-      setVaultInfo(response.data.data);
+      const response = await axiosInstance.get("/api/vault-info")
+      setVaultInfo(response.data.data)
     } catch (error) {
-      console.error("Failed to fetch vault info:", error);
+      console.error("Failed to fetch vault info:", error)
     }
-  };
+  }
 
   const handleInputChange = (name, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }));
+      [name]: value,
+    }))
 
     if (message) {
-      setMessage(null);
+      setMessage(null)
     }
-  };
+  }
 
   const handleLockPeriodSelect = (days) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      lockDays: days.toString()
-    }));
+      lockDays: days.toString(),
+    }))
     if (message) {
-      setMessage(null);
+      setMessage(null)
     }
-  };
+  }
 
   const validateForm = () => {
-    const { amount, lockDays, phoneNumber } = formData;
-    if (!amount || parseFloat(amount) <= 0) {
-      setMessage({ type: "error", text: "Please enter a valid amount greater than 0." });
-      return false;
+    const { amount, lockDays, phoneNumber } = formData
+    if (!amount || Number.parseFloat(amount) <= 0) {
+      setMessage({ type: "error", text: "Please enter a valid amount greater than 0." })
+      return false
     }
-    if (parseFloat(amount) < 10) {
-      setMessage({ type: "error", text: "Minimum deposit amount is E10." });
-      return false;
+    if (Number.parseFloat(amount) < 10) {
+      setMessage({ type: "error", text: "Minimum deposit amount is E10." })
+      return false
     }
-    if (!lockDays || parseInt(lockDays) <= 0) {
-      setMessage({ type: "error", text: "Please select a lock period." });
-      return false;
+    if (!lockDays || Number.parseInt(lockDays) <= 0) {
+      setMessage({ type: "error", text: "Please select a lock period." })
+      return false
     }
     if (!phoneNumber.trim()) {
-      setMessage({ type: "error", text: "Please enter your phone number." });
-      return false;
+      setMessage({ type: "error", text: "Please enter your phone number." })
+      return false
     }
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const cleanPhone = phoneNumber.replace(/\D/g, "")
     if (cleanPhone.length < 8) {
-      setMessage({ type: "error", text: "Please enter a valid phone number." });
-      return false;
+      setMessage({ type: "error", text: "Please enter a valid phone number." })
+      return false
     }
-    return true;
-  };
+    return true
+  }
 
   const handleDeposit = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) return
 
     if (!momoToken) {
       setMessage({
         type: "error",
-        text: "Payment system not ready. Please refresh the page and try again."
-      });
-      return;
+        text: "Payment system not ready. Please refresh the page and try again.",
+      })
+      return
     }
 
     try {
-      setLoading(true);
-      setMessage(null);
+      setLoading(true)
+      setMessage(null)
 
       const depositData = {
-        userId: await getToken("userId"),  // or however you store userId in RN
-        amount: parseFloat(formData.amount),
-        lockPeriodInDays: parseInt(formData.lockDays),
+        userId: await getToken("userId"),
+        amount: Number.parseFloat(formData.amount),
+        lockPeriodInDays: Number.parseInt(formData.lockDays),
         phoneNumber: formData.phoneNumber.trim(),
-        orderId: `DEP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      };
+        orderId: `DEP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      }
 
-      console.log("Sending deposit request:", depositData);
+      console.log("Sending deposit request:", depositData)
 
-      const res = await axiosInstance.post("/momo/money-collect", depositData);
+      const res = await axiosInstance.post("/momo/money-collect", depositData)
 
-      console.log("Deposit response:", res.data);
+      console.log("Deposit response:", res.data)
 
       if (res.data.status === "SUCCESSFUL" || res.data.status === "PENDING" || res.data.message) {
         setMessage({
           type: "success",
-          text: `Deposit initiated successfully!\nAmount: E${formData.amount}\nLock Period: ${formData.lockDays} days\nReference: ${res.data.referenceId || 'N/A'}`
-        });
+          text: `Deposit initiated successfully!\nAmount: E${formData.amount}\nLock Period: ${formData.lockDays} days\nReference: ${res.data.referenceId || "N/A"}`,
+        })
 
         setFormData({
           amount: "",
           lockDays: "",
-          phoneNumber: ""
-        });
+          phoneNumber: "",
+        })
 
         setTimeout(() => {
-          fetchVaultInfo();
-        }, 2000);
+          fetchVaultInfo()
+        }, 2000)
       } else {
         setMessage({
           type: "error",
-          text: res.data.error || "Failed to process deposit. Please try again."
-        });
+          text: res.data.error || "Failed to process deposit. Please try again.",
+        })
       }
     } catch (err) {
-      console.error("Deposit error:", err);
-      const errorMessage = err.response?.data?.error ||
+      console.error("Deposit error:", err)
+      const errorMessage =
+        err.response?.data?.error ||
         err.response?.data?.message ||
-        "Deposit failed. Please check your details and try again.";
-      setMessage({ type: "error", text: errorMessage });
+        "Deposit failed. Please check your details and try again."
+      setMessage({ type: "error", text: errorMessage })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   if (tokenLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <FontAwesome name="spinner" size={48} color="#2563EB" style={{ transform: [{ rotate: '360deg' }] }} />
+      <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FFFFFF" />
         <Text style={styles.loadingText}>Initializing payment system...</Text>
-      </View>
-    );
+      </LinearGradient>
+    )
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.card}>
+    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#667eea" />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
         <View style={styles.header}>
-          <FontAwesome name="money" size={40} color="#2563EB" />
-          <Text style={styles.title}>Make a Deposit</Text>
-          <Text style={styles.subtitle}>Secure your funds with our vault system</Text>
+          <View style={styles.headerIcon}>
+            <Ionicons name="wallet" size={32} color="#FFFFFF" />
+          </View>
+          <Text style={styles.headerTitle}>Make a Deposit</Text>
+          <Text style={styles.headerSubtitle}>Secure your funds with our vault system</Text>
         </View>
 
-        {/* Vault Info */}
-        {vaultInfo && (
-          <View style={styles.vaultInfo}>
-            <View style={styles.vaultHeader}>
-              <FontAwesome name="info-circle" size={18} color="#2563EB" />
-              <Text style={styles.vaultHeaderText}>Your Vault</Text>
-            </View>
-            <View style={styles.vaultDetails}>
-              <View style={styles.vaultDetailItem}>
-                <Text style={styles.vaultLabel}>Current Balance:</Text>
-                <Text style={[styles.vaultValue, { color: "#2563EB" }]}>
-                  E{vaultInfo.vault?.balance?.toFixed(2) || '0.00'}
-                </Text>
-              </View>
-              <View style={styles.vaultDetailItem}>
-                <Text style={styles.vaultLabel}>Active Deposits:</Text>
-                <Text style={[styles.vaultValue, { color: "#16A34A" }]}>
-                  {vaultInfo.lockedDeposits?.length || 0}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Message */}
-        {message && (
-          <View
-            style={[
-              styles.message,
-              message.type === "success" ? styles.messageSuccess : styles.messageError,
-            ]}
-          >
-            <FontAwesome
-              name={message.type === "success" ? "check-circle" : "exclamation-triangle"}
-              size={18}
-              color={message.type === "success" ? "#15803D" : "#B91C1C"}
-              style={{ marginRight: 8 }}
-            />
-            <Text style={message.type === "success" ? styles.messageTextSuccess : styles.messageTextError}>
-              {message.text}
-            </Text>
-          </View>
-        )}
-
-        {/* Amount Input */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Deposit Amount (E)</Text>
-          <View style={styles.inputWrapper}>
-            <FontAwesome name="money" size={18} color="#9CA3AF" style={styles.iconLeft} />
-            <TextInput
-              keyboardType="numeric"
-              placeholder="Enter amount (min. E10)"
-              value={formData.amount}
-              onChangeText={text => handleInputChange("amount", text)}
-              editable={!loading}
-              style={styles.input}
-            />
-          </View>
-          <Text style={styles.hintText}>Minimum deposit: E10</Text>
-        </View>
-
-        {/* Lock Period Buttons */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Lock Period</Text>
-          <View style={styles.lockPeriodContainer}>
-            {lockPeriodOptions.map((option) => {
-              const selected = formData.lockDays === option.days.toString();
-              return (
-                <TouchableOpacity
-                  key={option.days}
-                  onPress={() => handleLockPeriodSelect(option.days)}
-                  disabled={loading}
-                  style={[
-                    styles.lockPeriodButton,
-                    { backgroundColor: option.color },
-                    selected && styles.lockPeriodSelected,
-                    loading && { opacity: 0.5 }
-                  ]}
-                >
-                  <View style={styles.lockPeriodContent}>
-                    <View>
-                      <Text style={styles.lockPeriodLabel}>{option.label}</Text>
-                      <Text style={styles.lockPeriodPenalty}>{option.penalty}</Text>
-                    </View>
-                    <FontAwesome name="lock" size={20} color="#6B7280" />
+        {/* Main Card */}
+        <View style={styles.mainCard}>
+          {/* Vault Info */}
+          {vaultInfo && (
+            <View style={styles.vaultInfoCard}>
+              <LinearGradient colors={["#DBEAFE", "#BFDBFE"]} style={styles.vaultInfoGradient}>
+                <View style={styles.vaultInfoHeader}>
+                  <Ionicons name="information-circle" size={20} color="#2563EB" />
+                  <Text style={styles.vaultInfoTitle}>Your Vault Summary</Text>
+                </View>
+                <View style={styles.vaultInfoContent}>
+                  <View style={styles.vaultInfoItem}>
+                    <Text style={styles.vaultInfoLabel}>Current Balance</Text>
+                    <Text style={styles.vaultInfoValue}>E{vaultInfo.vault?.balance?.toFixed(2) || "0.00"}</Text>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={styles.hintText}>
-            Early withdrawal from 1-3 day locks incurs a 10% penalty + E5 fee
-          </Text>
-        </View>
-
-        {/* Custom Lock Days */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Or Enter Custom Days</Text>
-          <View style={styles.inputWrapper}>
-            <FontAwesome name="lock" size={18} color="#9CA3AF" style={styles.iconLeft} />
-            <TextInput
-              keyboardType="numeric"
-              placeholder="Custom lock period (days)"
-              value={formData.lockDays}
-              onChangeText={text => handleInputChange("lockDays", text)}
-              editable={!loading}
-              maxLength={3}
-              style={styles.input}
-            />
-          </View>
-        </View>
-
-        {/* Phone Number */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phone Number</Text>
-          <View style={styles.inputWrapper}>
-            <FontAwesome name="credit-card" size={18} color="#9CA3AF" style={styles.iconLeft} />
-            <TextInput
-              keyboardType="phone-pad"
-              placeholder="76123456 or 26876123456"
-              value={formData.phoneNumber}
-              onChangeText={text => handleInputChange("phoneNumber", text)}
-              editable={!loading}
-              maxLength={15}
-              style={styles.input}
-            />
-          </View>
-          <Text style={styles.hintText}>Enter your Eswatini mobile number (76, 78, or 79)</Text>
-        </View>
-
-        {/* Deposit Button */}
-        <TouchableOpacity
-          onPress={handleDeposit}
-          disabled={loading || !momoToken}
-          style={[
-            styles.depositButton,
-            (loading || !momoToken) ? styles.buttonDisabled : styles.buttonEnabled
-          ]}
-        >
-          {loading ? (
-            <>
-              <FontAwesome name="spinner" size={20} color="#FFF" style={{ marginRight: 8 }} />
-              <Text style={styles.depositButtonText}>Processing Deposit...</Text>
-            </>
-          ) : (
-            <>
-              <FontAwesome name="money" size={20} color="#FFF" style={{ marginRight: 8 }} />
-              <Text style={styles.depositButtonText}>Deposit Funds</Text>
-            </>
+                  <View style={styles.vaultInfoItem}>
+                    <Text style={styles.vaultInfoLabel}>Active Deposits</Text>
+                    <Text style={styles.vaultInfoValue}>{vaultInfo.lockedDeposits?.length || 0}</Text>
+                  </View>
+                </View>
+              </LinearGradient>
+            </View>
           )}
-        </TouchableOpacity>
 
-        {/* Important Information */}
-        <View style={styles.infoBox}>
-          <View style={styles.infoHeader}>
-            <FontAwesome name="info-circle" size={18} color="#2563EB" />
-            <Text style={styles.infoHeaderText}>Important Information</Text>
+          {/* Message */}
+          {message && (
+            <View
+              style={[styles.messageCard, message.type === "success" ? styles.messageSuccess : styles.messageError]}
+            >
+              <Ionicons
+                name={message.type === "success" ? "checkmark-circle" : "alert-circle"}
+                size={20}
+                color={message.type === "success" ? "#059669" : "#DC2626"}
+              />
+              <Text
+                style={[
+                  styles.messageText,
+                  message.type === "success" ? styles.messageTextSuccess : styles.messageTextError,
+                ]}
+              >
+                {message.text}
+              </Text>
+            </View>
+          )}
+
+          {/* Amount Input */}
+          <View style={styles.inputSection}>
+            <Text style={styles.sectionTitle}>Deposit Amount</Text>
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="cash" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  keyboardType="numeric"
+                  placeholder="Enter amount (min. E10)"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.amount}
+                  onChangeText={(text) => handleInputChange("amount", text)}
+                  editable={!loading}
+                  style={styles.textInput}
+                />
+                <Text style={styles.currencyLabel}>SZL</Text>
+              </View>
+            </View>
+            <Text style={styles.inputHint}>Minimum deposit: E10</Text>
           </View>
-          <View style={styles.infoList}>
-            <Text style={styles.infoItem}>• Minimum deposit: E10</Text>
-            <Text style={styles.infoItem}>• Funds are locked for the selected period</Text>
-            <Text style={styles.infoItem}>• Early withdrawal from 1-3 day locks: 10% penalty + E5 fee</Text>
-            <Text style={styles.infoItem}>• Withdrawals available 24 hours after deposit</Text>
-            <Text style={styles.infoItem}>• All transactions are secured by MoMo API</Text>
+
+          {/* Lock Period Selection */}
+          <View style={styles.inputSection}>
+            <Text style={styles.sectionTitle}>Choose Lock Period</Text>
+            <View style={styles.lockPeriodGrid}>
+              {lockPeriodOptions.map((option) => {
+                const selected = formData.lockDays === option.days.toString()
+                return (
+                  <TouchableOpacity
+                    key={option.days}
+                    onPress={() => handleLockPeriodSelect(option.days)}
+                    disabled={loading}
+                    style={[
+                      styles.lockPeriodCard,
+                      selected && styles.lockPeriodSelected,
+                      loading && styles.lockPeriodDisabled,
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={selected ? ["#667eea", "#764ba2"] : option.color}
+                      style={styles.lockPeriodGradient}
+                    >
+                      <Ionicons name={option.icon} size={24} color={selected ? "#FFFFFF" : "#374151"} />
+                      <Text style={[styles.lockPeriodLabel, selected && styles.lockPeriodLabelSelected]}>
+                        {option.label}
+                      </Text>
+                      <Text style={[styles.lockPeriodPenalty, selected && styles.lockPeriodPenaltySelected]}>
+                        {option.penalty}
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+            <Text style={styles.inputHint}>Early withdrawal from 1-3 day locks incurs a 10% penalty + E5 fee</Text>
+          </View>
+
+          {/* Custom Lock Days */}
+          <View style={styles.inputSection}>
+            <Text style={styles.sectionTitle}>Or Enter Custom Days</Text>
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="calendar" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  keyboardType="numeric"
+                  placeholder="Custom lock period (days)"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.lockDays}
+                  onChangeText={(text) => handleInputChange("lockDays", text)}
+                  editable={!loading}
+                  maxLength={3}
+                  style={styles.textInput}
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Phone Number */}
+          <View style={styles.inputSection}>
+            <Text style={styles.sectionTitle}>Phone Number</Text>
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="phone-portrait" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  keyboardType="phone-pad"
+                  placeholder="76123456 or 26876123456"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.phoneNumber}
+                  onChangeText={(text) => handleInputChange("phoneNumber", text)}
+                  editable={!loading}
+                  maxLength={15}
+                  style={styles.textInput}
+                />
+              </View>
+            </View>
+            <Text style={styles.inputHint}>Enter your Eswatini mobile number (76, 78, or 79)</Text>
+          </View>
+
+          {/* Deposit Button */}
+          <TouchableOpacity
+            onPress={handleDeposit}
+            disabled={loading || !momoToken}
+            style={[styles.depositButton, (loading || !momoToken) && styles.depositButtonDisabled]}
+          >
+            <LinearGradient
+              colors={loading || !momoToken ? ["#9CA3AF", "#6B7280"] : ["#10B981", "#059669"]}
+              style={styles.depositButtonGradient}
+            >
+              {loading ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.depositButtonText}>Processing...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+                  <Text style={styles.depositButtonText}>Deposit Funds</Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Info Card */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoHeader}>
+              <Ionicons name="information-circle" size={20} color="#2563EB" />
+              <Text style={styles.infoTitle}>Important Information</Text>
+            </View>
+            <View style={styles.infoList}>
+              <View style={styles.infoItem}>
+                <Ionicons name="checkmark" size={16} color="#10B981" />
+                <Text style={styles.infoText}>Minimum deposit: E10</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="lock-closed" size={16} color="#F59E0B" />
+                <Text style={styles.infoText}>Funds are locked for the selected period</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="warning" size={16} color="#EF4444" />
+                <Text style={styles.infoText}>Early withdrawal: 10% penalty + E5 fee</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="time" size={16} color="#6366F1" />
+                <Text style={styles.infoText}>Withdrawals available 24 hours after deposit</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="shield-checkmark" size={16} color="#059669" />
+                <Text style={styles.infoText}>All transactions secured by MoMo API</Text>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </ScrollView>
-  );
+      </ScrollView>
+    </LinearGradient>
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    backgroundColor: "#2563EB",
-    flexGrow: 1,
-    justifyContent: "center",
+    flex: 1,
   },
-  card: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 15,
-    elevation: 10,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    marginTop: 16,
+  },
+  scrollContainer: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   header: {
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 30,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#1F2937",
-    marginTop: 8,
-  },
-  subtitle: {
-    color: "#6B7280",
-    fontSize: 14,
-  },
-  vaultInfo: {
-    backgroundColor: "#DBEAFE",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  vaultHeader: {
-    flexDirection: "row",
+  headerIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
     alignItems: "center",
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: 8,
   },
-  vaultHeaderText: {
-    color: "#2563EB",
-    fontWeight: "600",
-    marginLeft: 6,
+  headerSubtitle: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.8)",
+    textAlign: "center",
   },
-  vaultDetails: {
+  mainCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  vaultInfoCard: {
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  vaultInfoGradient: {
+    padding: 16,
+  },
+  vaultInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  vaultInfoTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2563EB",
+    marginLeft: 8,
+  },
+  vaultInfoContent: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  vaultDetailItem: {
+  vaultInfoItem: {
     flex: 1,
   },
-  vaultLabel: {
-    color: "#4B5563",
+  vaultInfoLabel: {
     fontSize: 12,
+    color: "#4B5563",
+    marginBottom: 4,
   },
-  vaultValue: {
-    fontWeight: "700",
-    fontSize: 16,
+  vaultInfoValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1F2937",
   },
-  message: {
+  messageCard: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    alignItems: "flex-start",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
   },
   messageSuccess: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#BBF7D0",
+    backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
     borderWidth: 1,
   },
   messageError: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: "#FEF2F2",
     borderColor: "#FECACA",
     borderWidth: 1,
   },
-  messageTextSuccess: {
-    color: "#15803D",
+  messageText: {
     flex: 1,
+    marginLeft: 12,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  messageTextSuccess: {
+    color: "#065F46",
   },
   messageTextError: {
-    color: "#B91C1C",
-    flex: 1,
+    color: "#991B1B",
   },
-  inputGroup: {
-    marginBottom: 16,
+  inputSection: {
+    marginBottom: 24,
   },
-  label: {
-    marginBottom: 6,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: "600",
-    color: "#374151",
+    color: "#1F2937",
+    marginBottom: 12,
+  },
+  inputContainer: {
+    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#D1D5DB",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  input: {
+  inputIcon: {
+    marginRight: 12,
+  },
+  textInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 0,
-    color: "#111827",
+    color: "#1F2937",
   },
-  iconLeft: {
-    marginRight: 10,
+  currencyLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#6B7280",
   },
-  hintText: {
+  inputHint: {
     fontSize: 12,
     color: "#6B7280",
     marginTop: 4,
   },
-  lockPeriodContainer: {
+  lockPeriodGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-  },
-  lockPeriodButton: {
-    flexBasis: "48%",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: "transparent",
+    gap: 12,
     marginBottom: 8,
   },
-  lockPeriodSelected: {
-    borderColor: "#2563EB",
-    backgroundColor: "#DBEAFE",
+  lockPeriodCard: {
+    flexBasis: "48%",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  lockPeriodContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  lockPeriodSelected: {
+    shadowColor: "#667eea",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  lockPeriodDisabled: {
+    opacity: 0.5,
+  },
+  lockPeriodGradient: {
+    padding: 16,
     alignItems: "center",
+    minHeight: 100,
+    justifyContent: "center",
   },
   lockPeriodLabel: {
+    fontSize: 16,
     fontWeight: "600",
     color: "#374151",
-    fontSize: 16,
+    marginTop: 8,
+    textAlign: "center",
+  },
+  lockPeriodLabelSelected: {
+    color: "#FFFFFF",
   },
   lockPeriodPenalty: {
     fontSize: 12,
-    color: "#4B5563",
+    color: "#6B7280",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  lockPeriodPenaltySelected: {
+    color: "rgba(255, 255, 255, 0.8)",
   },
   depositButton: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 14,
     borderRadius: 16,
-    marginTop: 8,
+    overflow: "hidden",
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  buttonEnabled: {
-    backgroundColor: "#FBBF24",
+  depositButtonDisabled: {
+    shadowOpacity: 0.1,
+    elevation: 2,
   },
-  buttonDisabled: {
-    backgroundColor: "#9CA3AF",
+  depositButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
   },
   depositButtonText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
   },
-  infoBox: {
-    marginTop: 24,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 12,
+  infoCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
   },
   infoHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 12,
   },
-  infoHeaderText: {
-    marginLeft: 6,
+  infoTitle: {
+    fontSize: 16,
     fontWeight: "600",
     color: "#2563EB",
+    marginLeft: 8,
   },
   infoList: {
-    marginLeft: 6,
+    gap: 8,
   },
   infoItem: {
-    fontSize: 13,
-    color: "#4B5563",
-    marginBottom: 4,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "#2563EB",
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
-    padding: 16,
   },
-  loadingText: {
-    marginTop: 12,
+  infoText: {
+    fontSize: 14,
     color: "#4B5563",
-    fontSize: 16,
-  }
-});
+    marginLeft: 8,
+    flex: 1,
+  },
+})

@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+"use client"
+
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -7,89 +9,89 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
-} from "react-native";
-import FontAwesome from "react-native-vector-icons/FontAwesome";
-import axiosInstance from "../../api/axiosInstance"; // Adjust the path as needed
+  Dimensions,
+  StatusBar,
+} from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
+import { Ionicons } from "@expo/vector-icons"
+import axiosInstance from "../../api/axiosInstance"
+
+const { width } = Dimensions.get("window")
 
 export default function WithdrawPage() {
-  const [loading, setLoading] = useState(false);
-  const [loadingVaultInfo, setLoadingVaultInfo] = useState(true);
-  const [message, setMessage] = useState(null);
-  const [vaultInfo, setVaultInfo] = useState(null);
-  const [withdrawableDeposits, setWithdrawableDeposits] = useState([]);
-  const [selectedDeposits, setSelectedDeposits] = useState([]);
-  const [formData, setFormData] = useState({ phoneNumber: "" });
+  const [loading, setLoading] = useState(false)
+  const [loadingVaultInfo, setLoadingVaultInfo] = useState(true)
+  const [message, setMessage] = useState(null)
+  const [vaultInfo, setVaultInfo] = useState(null)
+  const [withdrawableDeposits, setWithdrawableDeposits] = useState([])
+  const [selectedDeposits, setSelectedDeposits] = useState([])
+  const [formData, setFormData] = useState({ phoneNumber: "" })
 
   useEffect(() => {
-    fetchVaultInfo();
-    fetchWithdrawableDeposits();
-  }, []);
+    fetchVaultInfo()
+    fetchWithdrawableDeposits()
+  }, [])
 
   const fetchVaultInfo = async () => {
     try {
-      setLoadingVaultInfo(true);
-      const response = await axiosInstance.get("/api/vault-info");
-      setVaultInfo(response.data.data);
+      setLoadingVaultInfo(true)
+      const response = await axiosInstance.get("/api/vault-info")
+      setVaultInfo(response.data.data)
     } catch (error) {
-      console.error("Failed to fetch vault info:", error);
+      console.error("Failed to fetch vault info:", error)
       setMessage({
         type: "error",
         text: "Failed to load vault information. Please try again.",
-      });
+      })
     } finally {
-      setLoadingVaultInfo(false);
+      setLoadingVaultInfo(false)
     }
-  };
+  }
 
   const fetchWithdrawableDeposits = async () => {
     try {
-      const response = await axiosInstance.get("/api/withdrawable-deposits");
-      setWithdrawableDeposits(response.data.data || []);
+      const response = await axiosInstance.get("/api/withdrawable-deposits")
+      setWithdrawableDeposits(response.data.data || [])
     } catch (error) {
-      console.error("Failed to fetch withdrawable deposits:", error);
+      console.error("Failed to fetch withdrawable deposits:", error)
       setMessage({
         type: "error",
         text: "Failed to load withdrawable deposits. Please try again.",
-      });
+      })
     }
-  };
+  }
 
   const handleInputChange = (text) => {
-    setFormData({ phoneNumber: text });
-    if (message) setMessage(null);
-  };
+    setFormData({ phoneNumber: text })
+    if (message) setMessage(null)
+  }
 
   const handleDepositSelection = (depositId) => {
     setSelectedDeposits((prev) => {
       if (prev.includes(depositId)) {
-        return prev.filter((id) => id !== depositId);
+        return prev.filter((id) => id !== depositId)
       } else {
-        return [...prev, depositId];
+        return [...prev, depositId]
       }
-    });
-    if (message) setMessage(null);
-  };
+    })
+    if (message) setMessage(null)
+  }
 
   const selectAllDeposits = () => {
-    const allDepositIds = withdrawableDeposits
-      .filter((d) => d.canWithdraw)
-      .map((d) => d.depositId);
-    setSelectedDeposits(allDepositIds);
-  };
+    const allDepositIds = withdrawableDeposits.filter((d) => d.canWithdraw).map((d) => d.depositId)
+    setSelectedDeposits(allDepositIds)
+  }
 
   const clearAllSelections = () => {
-    setSelectedDeposits([]);
-  };
+    setSelectedDeposits([])
+  }
 
   const calculateTotals = () => {
-    const selectedData = withdrawableDeposits.filter((d) =>
-      selectedDeposits.includes(d.depositId)
-    );
-    const totalOriginal = selectedData.reduce((sum, d) => sum + d.amount, 0);
-    const totalFees = selectedData.length * 5; // E5 per deposit
-    const totalPenalties = selectedData.reduce((sum, d) => sum + d.penalty, 0);
-    const totalNet = selectedData.reduce((sum, d) => sum + d.netAmount, 0);
+    const selectedData = withdrawableDeposits.filter((d) => selectedDeposits.includes(d.depositId))
+    const totalOriginal = selectedData.reduce((sum, d) => sum + d.amount, 0)
+    const totalFees = selectedData.length * 5
+    const totalPenalties = selectedData.reduce((sum, d) => sum + d.penalty, 0)
+    const totalNet = selectedData.reduce((sum, d) => sum + d.netAmount, 0)
 
     return {
       totalOriginal,
@@ -97,35 +99,35 @@ export default function WithdrawPage() {
       totalPenalties,
       totalNet,
       depositsCount: selectedData.length,
-    };
-  };
+    }
+  }
 
   const validateForm = () => {
     if (!formData.phoneNumber.trim()) {
-      setMessage({ type: "error", text: "Phone number is required." });
-      return false;
+      setMessage({ type: "error", text: "Phone number is required." })
+      return false
     }
     if (selectedDeposits.length === 0) {
-      setMessage({ type: "error", text: "Select at least one deposit to withdraw." });
-      return false;
+      setMessage({ type: "error", text: "Select at least one deposit to withdraw." })
+      return false
     }
-    return true;
-  };
+    return true
+  }
 
   const handleWithdraw = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) return
 
-    setLoading(true);
-    setMessage(null);
+    setLoading(true)
+    setMessage(null)
 
     try {
       const response = await axiosInstance.post("/api/withdraw", {
         phoneNumber: formData.phoneNumber,
         depositIds: selectedDeposits,
-      });
+      })
 
       if (response.data.success) {
-        const data = response.data.data;
+        const data = response.data.data
         setMessage({
           type: "success",
           text:
@@ -135,356 +137,449 @@ export default function WithdrawPage() {
             `Total Penalties: E${data.totalPenalties}\n` +
             `Deposits Processed: ${data.depositsProcessed}\n` +
             `Reference ID: ${data.referenceId}`,
-        });
+        })
 
-        setFormData({ phoneNumber: "" });
-        setSelectedDeposits([]);
-        fetchVaultInfo();
-        fetchWithdrawableDeposits();
+        setFormData({ phoneNumber: "" })
+        setSelectedDeposits([])
+        fetchVaultInfo()
+        fetchWithdrawableDeposits()
       }
     } catch (error) {
-      console.error("Withdrawal error:", error);
+      console.error("Withdrawal error:", error)
       const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Withdrawal failed. Please try again.";
-      setMessage({ type: "error", text: errorMessage });
+        error.response?.data?.message || error.response?.data?.error || "Withdrawal failed. Please try again."
+      setMessage({ type: "error", text: errorMessage })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const totals = calculateTotals();
+  const totals = calculateTotals()
 
   if (loadingVaultInfo) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2563EB" />
+      <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FFFFFF" />
         <Text style={styles.loadingText}>Loading vault information...</Text>
-      </View>
-    );
+      </LinearGradient>
+    )
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.card}>
-        <Text style={styles.title}>Individual Deposit Withdrawal</Text>
+    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#667eea" />
 
-        {/* Vault Info */}
-        {vaultInfo && (
-          <View style={styles.vaultInfo}>
-            <View style={styles.vaultHeader}>
-              <FontAwesome name="info-circle" size={18} color="#2563EB" />
-              <Text style={styles.vaultHeaderText}>Vault Summary</Text>
-            </View>
-            <View style={styles.vaultDetails}>
-              <View style={styles.vaultDetailItem}>
-                <Text style={styles.vaultLabel}>Total Locked:</Text>
-                <Text style={styles.vaultValue}>
-                  E{vaultInfo.depositSummary?.totalLockedAmount?.toFixed(2) || "0.00"}
-                </Text>
-              </View>
-              <View style={styles.vaultDetailItem}>
-                <Text style={styles.vaultLabel}>Total Deposits:</Text>
-                <Text style={styles.vaultValue}>
-                  {vaultInfo.depositSummary?.totalDeposits || 0}
-                </Text>
-              </View>
-              <View style={styles.vaultDetailItem}>
-                <Text style={styles.vaultLabel}>Withdrawable:</Text>
-                <Text style={[styles.vaultValue, { color: "#16A34A" }]}>
-                  {vaultInfo.depositSummary?.withdrawableDepositsCount || 0}
-                </Text>
-              </View>
-              <View style={styles.vaultDetailItem}>
-                <Text style={styles.vaultLabel}>Vault Balance:</Text>
-                <Text style={styles.vaultValue}>
-                  E{vaultInfo.vault?.balance?.toFixed(2) || "0.00"}
-                </Text>
-              </View>
-            </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerIcon}>
+            <Ionicons name="arrow-down-circle" size={32} color="#FFFFFF" />
           </View>
-        )}
-
-        {/* Phone Number Input */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phone Number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="76123456 or 26876123456"
-            keyboardType="phone-pad"
-            value={formData.phoneNumber}
-            onChangeText={handleInputChange}
-            editable={!loading}
-            maxLength={15}
-          />
-          <Text style={styles.hintText}>Enter Eswatini mobile number (76, 78, or 79 prefix)</Text>
+          <Text style={styles.headerTitle}>Withdraw Funds</Text>
+          <Text style={styles.headerSubtitle}>Select deposits to withdraw from your vault</Text>
         </View>
 
-        {/* Deposit Selection Header */}
-        <View style={styles.selectionHeader}>
-          <Text style={styles.selectionTitle}>Select Deposits to Withdraw</Text>
-          <View style={styles.selectionButtons}>
-            <TouchableOpacity onPress={selectAllDeposits} disabled={loading}>
-              <Text style={[styles.selectionButtonText, loading && styles.disabledText]}>Select All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={clearAllSelections} disabled={loading}>
-              <Text style={[styles.selectionButtonText, loading && styles.disabledText]}>Clear All</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Deposits List */}
-        {withdrawableDeposits.length === 0 ? (
-          <View style={styles.noDepositsContainer}>
-            <FontAwesome name="exclamation-triangle" size={48} color="#9CA3AF" />
-            <Text style={styles.noDepositsText}>No withdrawable deposits found</Text>
-            <Text style={styles.noDepositsSubtext}>Make a deposit first or wait for lock period to mature</Text>
-          </View>
-        ) : (
-          <View style={styles.depositsList}>
-            {withdrawableDeposits.map((deposit) => {
-              const isSelected = selectedDeposits.includes(deposit.depositId);
-              return (
-                <TouchableOpacity
-                  key={deposit.depositId}
-                  style={[
-                    styles.depositItem,
-                    isSelected && styles.depositItemSelected,
-                    !deposit.canWithdraw && styles.depositItemDisabled,
-                  ]}
-                  onPress={() => deposit.canWithdraw && handleDepositSelection(deposit.depositId)}
-                  disabled={!deposit.canWithdraw || loading}
-                >
-                  <View style={styles.depositInfo}>
-                    {deposit.canWithdraw ? (
-                      isSelected ? (
-                        <FontAwesome name="check-square" size={24} color="#2563EB" />
-                      ) : (
-                        <FontAwesome name="square" size={24} color="#9CA3AF" />
-                      )
-                    ) : (
-                      <FontAwesome name="clock-o" size={24} color="#9CA3AF" />
-                    )}
-                    <View style={styles.depositTextContainer}>
-                      <View style={styles.depositAmountRow}>
-                        <FontAwesome name="money" size={18} color="#16A34A" />
-                        <Text style={styles.depositAmount}>E{deposit.amount.toFixed(2)}</Text>
-                        <Text style={styles.depositLockPeriod}>
-                          ({deposit.lockPeriodInDays} day{deposit.lockPeriodInDays !== 1 ? "s" : ""})
-                        </Text>
-                      </View>
-                      <Text style={styles.depositDate}>
-                        Deposited: {new Date(deposit.depositDate).toLocaleDateString()}
-                      </Text>
-                    </View>
+        {/* Main Card */}
+        <View style={styles.mainCard}>
+          {/* Vault Summary */}
+          {vaultInfo && (
+            <View style={styles.vaultSummaryCard}>
+              <LinearGradient colors={["#DBEAFE", "#BFDBFE"]} style={styles.vaultSummaryGradient}>
+                <View style={styles.vaultSummaryHeader}>
+                  <Ionicons name="information-circle" size={20} color="#2563EB" />
+                  <Text style={styles.vaultSummaryTitle}>Vault Summary</Text>
+                </View>
+                <View style={styles.vaultSummaryGrid}>
+                  <View style={styles.vaultSummaryItem}>
+                    <Text style={styles.vaultSummaryLabel}>Total Locked</Text>
+                    <Text style={styles.vaultSummaryValue}>
+                      E{vaultInfo.depositSummary?.totalLockedAmount?.toFixed(2) || "0.00"}
+                    </Text>
                   </View>
-                  <View style={styles.depositSummary}>
-                    <Text style={styles.netAmount}>E{deposit.netAmount.toFixed(2)}</Text>
-                    <View style={styles.depositDetails}>
-                      {deposit.penalty > 0 && (
-                        <Text style={styles.penalty}>Penalty: E{deposit.penalty.toFixed(2)}</Text>
-                      )}
-                      <Text>Fee: E{deposit.flatFee}</Text>
-                      {deposit.isEarlyWithdrawal && <Text style={styles.earlyWithdrawal}>Early withdrawal</Text>}
-                      {deposit.hoursUntilMaturity > 0 && (
-                        <Text>Matures in: {deposit.hoursUntilMaturity}h</Text>
-                      )}
-                    </View>
+                  <View style={styles.vaultSummaryItem}>
+                    <Text style={styles.vaultSummaryLabel}>Total Deposits</Text>
+                    <Text style={styles.vaultSummaryValue}>{vaultInfo.depositSummary?.totalDeposits || 0}</Text>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Selection Summary */}
-        {selectedDeposits.length > 0 && (
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryTitle}>Withdrawal Summary</Text>
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Deposits Selected:</Text>
-                <Text style={styles.summaryValue}>{totals.depositsCount}</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Total Original:</Text>
-                <Text style={styles.summaryValue}>E{totals.totalOriginal.toFixed(2)}</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Total Fees:</Text>
-                <Text style={[styles.summaryValue, styles.negativeValue]}>-E{totals.totalFees.toFixed(2)}</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Total Penalties:</Text>
-                <Text style={[styles.summaryValue, styles.negativeValue]}>-E{totals.totalPenalties.toFixed(2)}</Text>
-              </View>
+                  <View style={styles.vaultSummaryItem}>
+                    <Text style={styles.vaultSummaryLabel}>Withdrawable</Text>
+                    <Text style={[styles.vaultSummaryValue, { color: "#059669" }]}>
+                      {vaultInfo.depositSummary?.withdrawableDepositsCount || 0}
+                    </Text>
+                  </View>
+                  <View style={styles.vaultSummaryItem}>
+                    <Text style={styles.vaultSummaryLabel}>Vault Balance</Text>
+                    <Text style={styles.vaultSummaryValue}>E{vaultInfo.vault?.balance?.toFixed(2) || "0.00"}</Text>
+                  </View>
+                </View>
+              </LinearGradient>
             </View>
-            <View style={styles.summaryTotal}>
-              <Text style={styles.summaryTotalLabel}>You will receive:</Text>
-              <Text style={styles.summaryTotalValue}>E{totals.totalNet.toFixed(2)}</Text>
-            </View>
-          </View>
-        )}
-
-        {/* Message */}
-        {message && (
-          <View
-            style={[
-              styles.messageBox,
-              message.type === "success" ? styles.messageSuccess : styles.messageError,
-            ]}
-          >
-            <Text style={styles.messageText}>{message.text}</Text>
-          </View>
-        )}
-
-        {/* Withdraw Button */}
-        <TouchableOpacity
-          onPress={handleWithdraw}
-          disabled={loading || selectedDeposits.length === 0}
-          style={[
-            styles.withdrawButton,
-            (loading || selectedDeposits.length === 0) ? styles.buttonDisabled : styles.buttonEnabled,
-          ]}
-        >
-          {loading ? (
-            <>
-              <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.withdrawButtonText}>Processing Withdrawals...</Text>
-            </>
-          ) : (
-            <>
-              <FontAwesome name="arrow-circle-down" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.withdrawButtonText}>
-                Withdraw Selected Deposits ({selectedDeposits.length})
-              </Text>
-            </>
           )}
-        </TouchableOpacity>
 
-        {/* Info Box */}
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>Individual Deposit Withdrawal System:</Text>
-          <View style={styles.infoList}>
-            <Text style={styles.infoItem}>• Each deposit is processed individually with its own fees</Text>
-            <Text style={styles.infoItem}>• Flat fee: E5 per deposit withdrawal</Text>
-            <Text style={styles.infoItem}>• Early withdrawal penalty: 10% of deposit amount (all lock periods)</Text>
-            <Text style={styles.infoItem}>• No waiting period - withdraw immediately after deposit</Text>
-            <Text style={styles.infoItem}>• Select specific deposits you want to withdraw from</Text>
+          {/* Phone Number Input */}
+          <View style={styles.inputSection}>
+            <Text style={styles.sectionTitle}>Phone Number</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="phone-portrait" size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <TextInput
+                style={styles.textInput}
+                placeholder="76123456 or 26876123456"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+                value={formData.phoneNumber}
+                onChangeText={handleInputChange}
+                editable={!loading}
+                maxLength={15}
+              />
+            </View>
+            <Text style={styles.inputHint}>Enter Eswatini mobile number (76, 78, or 79 prefix)</Text>
+          </View>
+
+          {/* Deposit Selection */}
+          <View style={styles.selectionSection}>
+            <View style={styles.selectionHeader}>
+              <Text style={styles.sectionTitle}>Select Deposits to Withdraw</Text>
+              <View style={styles.selectionButtons}>
+                <TouchableOpacity onPress={selectAllDeposits} disabled={loading}>
+                  <Text style={[styles.selectionButtonText, loading && styles.disabledText]}>Select All</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={clearAllSelections} disabled={loading}>
+                  <Text style={[styles.selectionButtonText, loading && styles.disabledText]}>Clear All</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Deposits List */}
+            {withdrawableDeposits.length === 0 ? (
+              <View style={styles.noDepositsContainer}>
+                <Ionicons name="wallet-outline" size={64} color="#9CA3AF" />
+                <Text style={styles.noDepositsTitle}>No withdrawable deposits</Text>
+                <Text style={styles.noDepositsText}>Make a deposit first or wait for lock period to mature</Text>
+              </View>
+            ) : (
+              <View style={styles.depositsList}>
+                {withdrawableDeposits.map((deposit) => {
+                  const isSelected = selectedDeposits.includes(deposit.depositId)
+                  return (
+                    <TouchableOpacity
+                      key={deposit.depositId}
+                      style={[
+                        styles.depositCard,
+                        isSelected && styles.depositCardSelected,
+                        !deposit.canWithdraw && styles.depositCardDisabled,
+                      ]}
+                      onPress={() => deposit.canWithdraw && handleDepositSelection(deposit.depositId)}
+                      disabled={!deposit.canWithdraw || loading}
+                    >
+                      <View style={styles.depositCardContent}>
+                        <View style={styles.depositCardLeft}>
+                          <View style={styles.depositCheckbox}>
+                            {deposit.canWithdraw ? (
+                              isSelected ? (
+                                <Ionicons name="checkmark-circle" size={24} color="#667eea" />
+                              ) : (
+                                <Ionicons name="ellipse-outline" size={24} color="#9CA3AF" />
+                              )
+                            ) : (
+                              <Ionicons name="time-outline" size={24} color="#9CA3AF" />
+                            )}
+                          </View>
+                          <View style={styles.depositInfo}>
+                            <View style={styles.depositAmountRow}>
+                              <Ionicons name="cash" size={16} color="#059669" />
+                              <Text style={styles.depositAmount}>E{deposit.amount.toFixed(2)}</Text>
+                              <Text style={styles.depositLockPeriod}>
+                                ({deposit.lockPeriodInDays} day{deposit.lockPeriodInDays !== 1 ? "s" : ""})
+                              </Text>
+                            </View>
+                            <Text style={styles.depositDate}>
+                              Deposited: {new Date(deposit.depositDate).toLocaleDateString()}
+                            </Text>
+                            {deposit.isEarlyWithdrawal && (
+                              <View style={styles.earlyWithdrawalBadge}>
+                                <Ionicons name="warning" size={12} color="#F59E0B" />
+                                <Text style={styles.earlyWithdrawalText}>Early withdrawal</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                        <View style={styles.depositCardRight}>
+                          <Text style={styles.netAmount}>E{deposit.netAmount.toFixed(2)}</Text>
+                          <View style={styles.depositDetails}>
+                            {deposit.penalty > 0 && (
+                              <Text style={styles.penaltyText}>-E{deposit.penalty.toFixed(2)} penalty</Text>
+                            )}
+                            <Text style={styles.feeText}>-E{deposit.flatFee} fee</Text>
+                            {deposit.hoursUntilMaturity > 0 && (
+                              <Text style={styles.maturityText}>Matures in {deposit.hoursUntilMaturity}h</Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+            )}
+          </View>
+
+          {/* Selection Summary */}
+          {selectedDeposits.length > 0 && (
+            <View style={styles.summaryCard}>
+              <LinearGradient colors={["#ECFDF5", "#D1FAE5"]} style={styles.summaryGradient}>
+                <View style={styles.summaryHeader}>
+                  <Ionicons name="calculator" size={20} color="#059669" />
+                  <Text style={styles.summaryTitle}>Withdrawal Summary</Text>
+                </View>
+                <View style={styles.summaryGrid}>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Deposits Selected</Text>
+                    <Text style={styles.summaryValue}>{totals.depositsCount}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Total Original</Text>
+                    <Text style={styles.summaryValue}>E{totals.totalOriginal.toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Total Fees</Text>
+                    <Text style={[styles.summaryValue, styles.negativeValue]}>-E{totals.totalFees.toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Total Penalties</Text>
+                    <Text style={[styles.summaryValue, styles.negativeValue]}>
+                      -E{totals.totalPenalties.toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.summaryTotal}>
+                  <Text style={styles.summaryTotalLabel}>You will receive:</Text>
+                  <Text style={styles.summaryTotalValue}>E{totals.totalNet.toFixed(2)}</Text>
+                </View>
+              </LinearGradient>
+            </View>
+          )}
+
+          {/* Message */}
+          {message && (
+            <View
+              style={[styles.messageCard, message.type === "success" ? styles.messageSuccess : styles.messageError]}
+            >
+              <Ionicons
+                name={message.type === "success" ? "checkmark-circle" : "alert-circle"}
+                size={20}
+                color={message.type === "success" ? "#059669" : "#DC2626"}
+              />
+              <Text
+                style={[
+                  styles.messageText,
+                  message.type === "success" ? styles.messageTextSuccess : styles.messageTextError,
+                ]}
+              >
+                {message.text}
+              </Text>
+            </View>
+          )}
+
+          {/* Withdraw Button */}
+          <TouchableOpacity
+            onPress={handleWithdraw}
+            disabled={loading || selectedDeposits.length === 0}
+            style={[styles.withdrawButton, (loading || selectedDeposits.length === 0) && styles.withdrawButtonDisabled]}
+          >
+            <LinearGradient
+              colors={loading || selectedDeposits.length === 0 ? ["#9CA3AF", "#6B7280"] : ["#EF4444", "#DC2626"]}
+              style={styles.withdrawButtonGradient}
+            >
+              {loading ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.withdrawButtonText}>Processing...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="arrow-down-circle" size={20} color="#FFFFFF" />
+                  <Text style={styles.withdrawButtonText}>Withdraw Selected ({selectedDeposits.length})</Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Info Card */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoHeader}>
+              <Ionicons name="information-circle" size={20} color="#2563EB" />
+              <Text style={styles.infoTitle}>Withdrawal Information</Text>
+            </View>
+            <View style={styles.infoList}>
+              <View style={styles.infoItem}>
+                <Ionicons name="document-text" size={16} color="#6366F1" />
+                <Text style={styles.infoText}>Each deposit processed individually with own fees</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="cash" size={16} color="#F59E0B" />
+                <Text style={styles.infoText}>Flat fee: E5 per deposit withdrawal</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="warning" size={16} color="#EF4444" />
+                <Text style={styles.infoText}>Early withdrawal penalty: 10% of deposit amount</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="time" size={16} color="#10B981" />
+                <Text style={styles.infoText}>No waiting period - withdraw immediately after deposit</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                <Text style={styles.infoText}>Select specific deposits you want to withdraw from</Text>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </ScrollView>
-  );
+      </ScrollView>
+    </LinearGradient>
+  )
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   loadingContainer: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
     justifyContent: "center",
     alignItems: "center",
   },
   loadingText: {
-    marginTop: 12,
-    color: "#2563EB",
+    color: "#FFFFFF",
     fontSize: 16,
+    marginTop: 16,
   },
-  container: {
-    padding: 16,
-    backgroundColor: "#F9FAFB",
-    flexGrow: 1,
+  scrollContainer: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 5,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#2563EB",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  vaultInfo: {
-    backgroundColor: "#DBEAFE",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  vaultHeader: {
-    flexDirection: "row",
+  header: {
     alignItems: "center",
+    marginBottom: 30,
+  },
+  headerIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: 8,
   },
-  vaultHeaderText: {
-    color: "#2563EB",
-    fontWeight: "600",
-    marginLeft: 6,
+  headerSubtitle: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.8)",
+    textAlign: "center",
   },
-  vaultDetails: {
+  mainCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  vaultSummaryCard: {
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  vaultSummaryGradient: {
+    padding: 16,
+  },
+  vaultSummaryHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  vaultDetailItem: {
+  vaultSummaryTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2563EB",
+    marginLeft: 8,
+  },
+  vaultSummaryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  vaultSummaryItem: {
     flexBasis: "48%",
     marginBottom: 8,
   },
-  vaultLabel: {
+  vaultSummaryLabel: {
+    fontSize: 12,
     color: "#4B5563",
-    fontSize: 14,
+    marginBottom: 4,
   },
-  vaultValue: {
-    fontWeight: "700",
+  vaultSummaryValue: {
     fontSize: 16,
+    fontWeight: "bold",
+    color: "#1F2937",
   },
-  inputGroup: {
-    marginBottom: 16,
+  inputSection: {
+    marginBottom: 24,
   },
-  label: {
-    marginBottom: 6,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: "600",
-    color: "#374151",
+    color: "#1F2937",
+    marginBottom: 12,
   },
-  input: {
-    borderColor: "#D1D5DB",
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: "#111827",
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
   },
-  hintText: {
-    marginTop: 4,
+  inputIcon: {
+    marginRight: 12,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#1F2937",
+  },
+  inputHint: {
     fontSize: 12,
     color: "#6B7280",
+  },
+  selectionSection: {
+    marginBottom: 24,
   },
   selectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
-  },
-  selectionTitle: {
-    fontWeight: "700",
-    fontSize: 16,
-    color: "#1F2937",
+    marginBottom: 16,
   },
   selectionButtons: {
     flexDirection: "row",
     gap: 16,
   },
   selectionButtonText: {
-    color: "#2563EB",
+    color: "#667eea",
     fontWeight: "600",
     fontSize: 14,
   },
@@ -493,185 +588,274 @@ const styles = StyleSheet.create({
   },
   noDepositsContainer: {
     alignItems: "center",
-    paddingVertical: 24,
+    paddingVertical: 40,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  noDepositsTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginTop: 16,
+    marginBottom: 8,
   },
   noDepositsText: {
-    fontSize: 18,
-    color: "#9CA3AF",
-    marginTop: 8,
-  },
-  noDepositsSubtext: {
     fontSize: 14,
     color: "#9CA3AF",
+    textAlign: "center",
+    paddingHorizontal: 20,
   },
   depositsList: {
-    maxHeight: 300,
-    marginBottom: 16,
+    gap: 12,
   },
-  depositItem: {
+  depositCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
+    borderColor: "#E5E7EB",
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  depositCardSelected: {
+    borderColor: "#667eea",
+    backgroundColor: "#F8FAFF",
+    shadowColor: "#667eea",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  depositCardDisabled: {
+    opacity: 0.5,
+  },
+  depositCardContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  depositItemSelected: {
-    borderColor: "#2563EB",
-    backgroundColor: "#DBEAFE",
-  },
-  depositItemDisabled: {
-    opacity: 0.5,
-  },
-  depositInfo: {
+  depositCardLeft: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
   },
-  depositTextContainer: {
-    marginLeft: 12,
+  depositCheckbox: {
+    marginRight: 12,
+  },
+  depositInfo: {
+    flex: 1,
   },
   depositAmountRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    marginBottom: 4,
   },
   depositAmount: {
-    fontWeight: "700",
     fontSize: 16,
-    marginLeft: 4,
+    fontWeight: "bold",
+    color: "#1F2937",
+    marginLeft: 6,
   },
   depositLockPeriod: {
-    marginLeft: 8,
     fontSize: 12,
     color: "#6B7280",
+    marginLeft: 8,
   },
   depositDate: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#9CA3AF",
+    marginBottom: 4,
   },
-  depositSummary: {
+  earlyWithdrawalBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+  earlyWithdrawalText: {
+    fontSize: 10,
+    color: "#92400E",
+    marginLeft: 4,
+    fontWeight: "500",
+  },
+  depositCardRight: {
     alignItems: "flex-end",
   },
   netAmount: {
-    fontWeight: "700",
-    fontSize: 16,
-    color: "#16A34A",
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#059669",
+    marginBottom: 4,
   },
   depositDetails: {
-    marginTop: 4,
     alignItems: "flex-end",
   },
-  penalty: {
+  penaltyText: {
+    fontSize: 12,
     color: "#DC2626",
-    fontSize: 12,
+    marginBottom: 2,
   },
-  earlyWithdrawal: {
-    color: "#EA580C",
+  feeText: {
     fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 2,
   },
-  summaryBox: {
-    backgroundColor: "#DCFCE7",
-    borderRadius: 10,
-    padding: 12,
-    borderColor: "#BBF7D0",
-    borderWidth: 1,
-    marginBottom: 16,
+  maturityText: {
+    fontSize: 12,
+    color: "#2563EB",
+  },
+  summaryCard: {
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  summaryGradient: {
+    padding: 16,
+  },
+  summaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
   },
   summaryTitle: {
-    fontWeight: "700",
     fontSize: 16,
-    color: "#15803D",
-    marginBottom: 8,
+    fontWeight: "600",
+    color: "#059669",
+    marginLeft: 8,
   },
   summaryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    marginBottom: 12,
   },
   summaryItem: {
     flexBasis: "48%",
     marginBottom: 8,
   },
   summaryLabel: {
+    fontSize: 12,
     color: "#4B5563",
+    marginBottom: 4,
   },
   summaryValue: {
-    fontWeight: "700",
     fontSize: 14,
+    fontWeight: "600",
+    color: "#1F2937",
   },
   negativeValue: {
     color: "#DC2626",
   },
   summaryTotal: {
-    borderTopColor: "#BBF7D0",
-    borderTopWidth: 1,
-    paddingTop: 8,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#A7F3D0",
   },
   summaryTotalLabel: {
-    fontWeight: "700",
-    color: "#15803D",
     fontSize: 16,
+    fontWeight: "600",
+    color: "#059669",
   },
   summaryTotalValue: {
-    fontWeight: "900",
-    color: "#22C55E",
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#059669",
   },
-  messageBox: {
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 16,
+  messageCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
   },
   messageSuccess: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#BBF7D0",
+    backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
     borderWidth: 1,
   },
   messageError: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: "#FEF2F2",
     borderColor: "#FECACA",
     borderWidth: 1,
   },
   messageText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  messageTextSuccess: {
+    color: "#065F46",
+  },
+  messageTextError: {
     color: "#991B1B",
   },
   withdrawButton: {
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  withdrawButtonDisabled: {
+    shadowOpacity: 0.1,
+    elevation: 2,
+  },
+  withdrawButtonGradient: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 14,
-    borderRadius: 10,
-  },
-  buttonEnabled: {
-    backgroundColor: "#2563EB",
-  },
-  buttonDisabled: {
-    backgroundColor: "#9CA3AF",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
   },
   withdrawButtonText: {
-    color: "#fff",
-    fontWeight: "700",
+    color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "600",
   },
-  infoBox: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 8,
-    padding: 12,
+  infoCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  infoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
   },
   infoTitle: {
-    fontWeight: "700",
-    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2563EB",
+    marginLeft: 8,
   },
   infoList: {
-    marginLeft: 12,
+    gap: 8,
   },
   infoItem: {
-    fontSize: 12,
-    marginBottom: 4,
+    flexDirection: "row",
+    alignItems: "center",
   },
-});
+  infoText: {
+    fontSize: 14,
+    color: "#4B5563",
+    marginLeft: 8,
+    flex: 1,
+  },
+})
